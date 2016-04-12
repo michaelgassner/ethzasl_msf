@@ -105,7 +105,7 @@ struct MSF_SensorManagerROS : public msf_core::MSF_SensorManager<EKFState_T> {
         "cov_aux", 10);
     pubCovCoreAux_ = nh.advertise<sensor_fusion_comm::DoubleMatrixStamped>(
         "cov_core_aux", 10);
-    pubPoseWithBodyrates_ = nh.advertise<sensor_fusion_comm::ExtStateWithBodyRates>("ext_state_with_body_rates",10);
+    pubPoseWithBodyrates_ = nh.advertise< sensor_fusion_comm::ExtStateWithBodyRates >("ext_state_with_body_rates", 1);
 
     hl_state_buf_.state.resize(HLI_EKF_STATE_SIZE, 0);
 
