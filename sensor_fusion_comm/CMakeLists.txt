@@ -18,6 +18,7 @@ add_message_files(
   ExtEkf.msg
   ExtState.msg
   PointWithCovarianceStamped.msg
+  ExtStateWithBodyRates.msg
 )
 
 #uncomment if you have defined services

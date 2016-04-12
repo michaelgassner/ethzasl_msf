@@ -24,6 +24,7 @@
 #include <sensor_fusion_comm/DoubleArrayStamped.h>
 #include <sensor_fusion_comm/DoubleMatrixStamped.h>
 #include <sensor_fusion_comm/ExtState.h>
+#include <sensor_fusion_comm/ExtStateWithBodyRates.h>
 #include <sensor_fusion_comm/ExtEkf.h>
 #include <geometry_msgs/PointStamped.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
@@ -69,6 +70,7 @@ struct MSF_SensorManagerROS : public msf_core::MSF_SensorManager<EKFState_T> {
   ros::Publisher pubCovCore_;  ///< Publishes the covariance matrix for the core states.
   ros::Publisher pubCovAux_;  ///< Publishes the covariance matrix for the auxiliary states.
   ros::Publisher pubCovCoreAux_; ///< Publishes the covariance matrix for the cross-correlations between core and auxiliary states.
+  ros::Publisher pubPoseWithBodyrates_;  ///< Publishes 6DoF pose including velocity output.
 
   mutable tf::TransformBroadcaster tf_broadcaster_;
 
@@ -103,6 +105,7 @@ struct MSF_SensorManagerROS : public msf_core::MSF_SensorManager<EKFState_T> {
         "cov_aux", 10);
     pubCovCoreAux_ = nh.advertise<sensor_fusion_comm::DoubleMatrixStamped>(
         "cov_core_aux", 10);
+    pubPoseWithBodyrates_ = nh.advertise<sensor_fusion_comm::ExtStateWithBodyRates>("ext_state_with_body_rates",10);
 
     hl_state_buf_.state.resize(HLI_EKF_STATE_SIZE, 0);
 
@@ -197,7 +200,7 @@ struct MSF_SensorManagerROS : public msf_core::MSF_SensorManager<EKFState_T> {
   virtual void PublishStateAfterPropagation(
       const shared_ptr<EKFState_T>& state) const {
 
-    if (pubPoseCrtl_.getNumSubscribers() || pubPose_.getNumSubscribers() || pubOdometry_.getNumSubscribers()) {
+    if (pubPoseCrtl_.getNumSubscribers() || pubPose_.getNumSubscribers() || pubOdometry_.getNumSubscribers() || pubPoseWithBodyrates_.getNumSubscribers()) {
       static int msg_seq = 0;
 
       geometry_msgs::PoseWithCovarianceStamped msgPose;
@@ -221,6 +224,13 @@ struct MSF_SensorManagerROS : public msf_core::MSF_SensorManager<EKFState_T> {
       state->ToExtStateMsg(msgPoseCtrl);
       pubPoseCrtl_.publish(msgPoseCtrl);
 
+      sensor_fusion_comm::ExtStateWithBodyRates msgPoseWithBodyrates;
+      msgPoseWithBodyrates.header = msgPose.header;
+      msgPoseWithBodyrates.body_rates = msgOdometry.twist.twist.angular;
+      msgPoseWithBodyrates.pose.position = msgPoseCtrl.pose.position;
+      msgPoseWithBodyrates.pose.orientation = msgPoseCtrl.pose.orientation;
+      msgPoseWithBodyrates.velocity = msgPoseCtrl.velocity;
+      pubPoseWithBodyrates_.publish(msgPoseWithBodyrates);
     }
   }
 
